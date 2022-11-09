@@ -20,6 +20,7 @@ NAME_WEIGHT = 10
 class SearchPrefix(Enum):
     NAME = 'S'
     LOCATION = 'K'
+    ORGTYPE = 'O'
     ID = 'Q'
 
 def index_funder(funder, writable_db=None, termgenerator=None):
@@ -57,25 +58,27 @@ def index_funder(funder, writable_db=None, termgenerator=None):
     name = funder.get('name')
     termgenerator.index_text(name, 1, SearchPrefix.NAME.value)
     termgenerator.index_text(name, NAME_WEIGHT)
+
+    termgenerator.increase_termpos()
     altnames = funder.get('altnames')
     for altname in altnames:
         termgenerator.index_text(altname, 1, SearchPrefix.NAME.value)
         termgenerator.index_text(altname, NAME_WEIGHT)
     
     termgenerator.increase_termpos()
-    location = funder.get('location')
+    location = funder.get('country')
     termgenerator.index_text(location, 1, SearchPrefix.LOCATION.value)
+    termgenerator.increase_termpos()
+    location = funder.get('region')
+    termgenerator.index_text(location, 1, SearchPrefix.LOCATION.value)
+
+    termgenerator.increase_termpos()
+    orgtype = funder.get('fundingBodyType')
+    termgenerator.index_text(orgtype, 1, SearchPrefix.ORGTYPE.value)
 
     termgenerator.increase_termpos()
     termgenerator.index_text(docid, 1, SearchPrefix.ID.value)
 
-    # Store the document for a result.
-    if 'uri' in funder:
-        del funder['uri']
-    if 'replaces' in funder:
-        del funder['replaces']
-    if 'replaced-by' in funder:
-        del funder['replaced-by']
     doc.set_data(json.dumps(funder, indent=2))
     writable_db.replace_document(docid, doc)
     if auto_commit:
