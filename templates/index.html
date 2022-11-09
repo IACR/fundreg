@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link href="/css/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <script src="/css/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <title>{{title}}</title>
+    <style>
+     @media screen and (min-width:992px) {
+       .dropdown:hover .dropdown-menu {
+         display:block;
+         margin-top: 2rem;
+       }
+       .dropdown .dropdown-menu {
+         display:none;
+       }
+     }
+     .header img {
+       max-width: 3rem;
+       margin-right: 1rem;
+       margin-left: 1rem;
+     }
+     img.icon {
+       max-width: 2rem;
+     }
+    </style>
+    
+  </head>
+
+  <body>
+    <div class="header container-fluid" style="background-color: #faebd7;">
+      <div class="container py-5 d-flex align-items-center">
+        <img src="/img/banner_LeftArrow_v2.svg">
+        <h1 class="mb-0">Search Crossref Funder Registry</h1>
+        <img src="/img/banner_RightArrow_v2.svg">
+      </div>
+    </div>
+    <noscript>
+      <h1 class="text-center">What a lovely hat</h1>
+      <h4 class="text-center">Is it made out of <a href="https://iacr.org/tinfoil.html">tin foil</a>?</h4>
+    </noscript>
+    <main id="mainContent" class="container px-3 px-md-4">
+      <p class="mt-2">
+        The purpose of this is to help authors find the metadata for their funding
+        agencies. You can search by name or country.
+      </p>
+      <div class="container">
+        <form class="mt-3">
+          <div class="row">
+            <div class="col-sm-6">
+              <div class="form-floating">
+                <input type="text" class="form-control" id="textq" placeholder="NSF">
+                <label for="textq">name</label>
+              </div>
+            </div>
+            <div class="col-sm-6">
+              <div class="form-floating">
+                <input type="text" class="form-control" id="locationq" placeholder="Denmark">
+                <label for="locationq">Country</label>
+              </div>
+            </div>
+          </div>
+        </form>
+        {% if item %}
+        <div id="view" class="mt-4">
+          <div class="row">
+            <div class="col-6">
+          <h3>{{item.name}}</h3>
+<pre id="latex" class="mt-4">
+\addfunder{id={{item.id}},
+    name="{{item.name}}",
+    grantid="XXXXXX",
+    country="{{item.location}}"}
+</pre>
+You need to supply the grantid.      <button id="bibcopy" class="ms-3 btn btn-sm btn-secondary"
+              aria-label="Copy to clipboard"
+              onclick="copyMetadata()">Copy LaTeX to clipboard</button>
+
+            </div>
+            <div class="col-6">
+              {% if item.broader %}
+              <h5>More general</h5>
+              <ul>
+                {% for key,nam in item.broader.items() %}
+                <li><a href="/view/{{key}}">{{nam}}</a></li>
+                {% endfor %}
+              </ul>
+              {% endif %}
+
+              {% if item.narrower %}
+              <h5>More narrow</h5>
+              <ul>
+                {% for key,nam in item.narrower.items() %}
+                <li><a href="/view/{{key}}">{{nam}}</a></li>
+                {% endfor %}
+              </ul>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endif %}
+        <div id="results" class="mt-3"></div>
+      </div>
+    </main>
+{% raw %}
+<script id="results-template" type="text/x-handlebars-template">
+  <ol>
+    {{#each results}}
+    <li role="presentation">
+      <a href="/view/{{id}}">{{name}}</a> <span class="fw-light">{{location}}</span>
+      {{#if alt-names}}
+      <div class="btn-group dropdown">
+        <span class="ms-2 dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">Alternate names</span>
+        <ul class="dropdown-menu">
+          {{#each alt-names}}
+          <li class="dropdown-item">{{this}}</li>
+        {{/each}}
+        </ul>
+      </div>
+      {{/if}}
+    </li>
+    {{/each}}
+  </ol>
+</script>
+{% endraw %}
+<script src="/js/handlebars-v4.7.7.js"></script>
+ <script>
+  function copyMetadata() {
+   let range = document.createRange();
+   range.selectNode(document.getElementById('latex'));
+   window.getSelection().removeAllRanges();
+   window.getSelection().addRange(range);
+   document.execCommand('copy');
+   window.getSelection().removeAllRanges();
+  const copyTooltip = new bootstrap.Tooltip('#bibcopy',
+                                            {trigger: 'manual',
+                                             title: 'Copied!'});
+//   let bibcopy = document.getElementById('bibcopy');
+//   let copyTooltip = bootstrap.Tooltip.getOrCreateInstance('#bibcopy', {trigger: 'manual',
+//                                                                        title: 'Copied!'});
+    console.log('copied');
+    console.log(copyTooltip);
+    copyTooltip.show();
+   setTimeout(function() {
+     copyTooltip.dispose();
+   }, 2000);
+ }
+  var theTemplateScript = document.getElementById('results-template').innerHTML;
+  var resultsTemplate = Handlebars.compile(theTemplateScript);
+  var textinput = document.getElementById('textq');
+  var locinput = document.getElementById('locationq');
+
+ // Returns a function, that, as long as it continues to be invoked, will not
+ // be triggered. The function will be called after it stops being called for
+ // N milliseconds. If `immediate` is passed, trigger the function on the
+ // leading edge, instead of the trailing.
+ function debounce(func, wait, immediate) {
+   var timeout;
+   return function() {
+     var context = this, args = arguments;
+     var later = function() {
+       timeout = null;
+       if (!immediate) func.apply(context, args);
+     };
+     var callNow = immediate && !timeout;
+     clearTimeout(timeout);
+     timeout = setTimeout(later, wait);
+     if (callNow) func.apply(context, args);
+   };
+ };
+
+ 
+ let controller;
+ let signal;
+ 
+ var doSearch = debounce(function() {
+   args = {}
+   if (textinput.value || locinput.value) {
+     if (textinput.value) {
+       args['textq'] = textinput.value;
+     }
+     if (locinput.value) {
+       args['locationq'] = locinput.value;
+     }
+     if (controller !== undefined) {
+       console.log('killing');
+       controller.abort();
+     }
+     controller = new AbortController();
+     signal = controller.signal;
+     fetch('/search?' + new URLSearchParams(args), {signal})
+       .then((response) => response.json())
+       .then((data) => {
+         console.log(data);
+         document.getElementById('view').innerHTML = '';
+         if (data.results.length > 0) {
+           document.getElementById('results').innerHTML = resultsTemplate(data);
+         } else {
+           document.getElementById('results').innerHTML = 'no results';
+         }
+         controller = undefined;
+       }).catch((error) => {
+         console.log('error in fetch');
+         console.log(error);
+       });
+   } else {
+     console.log('no query');
+   }
+ }, 500); // only after 250 ms.
+
+ document.querySelectorAll('input').forEach((elem) => {
+   elem.addEventListener('input', doSearch);
+ });
+</script>
+  </body>
+</html>
+
