@@ -57,7 +57,7 @@ def index_funder(funder, writable_db=None, termgenerator=None):
     name = funder.get('name')
     termgenerator.index_text(name, 1, SearchPrefix.NAME.value)
     termgenerator.index_text(name, NAME_WEIGHT)
-    altnames = funder.get('alt-names')
+    altnames = funder.get('altnames')
     for altname in altnames:
         termgenerator.index_text(altname, 1, SearchPrefix.NAME.value)
         termgenerator.index_text(altname, NAME_WEIGHT)

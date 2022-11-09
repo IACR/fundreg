@@ -16,7 +16,8 @@ import requests
 import sys
 import xapian
 from xml.etree import ElementTree as ET
-from habanero import Crossref
+# no longer used
+# from habanero import Crossref
 from search_lib import index_funder
 
 assert sys.version_info >= (3,0)
@@ -76,6 +77,14 @@ def update_from_crossref():
     items = list(funders.values())
     funders_file.write_text(json.dumps({'num': len(items), 'items': items}, indent=2), encoding='UTF-8')
 
+def fetch_rdf():
+    print('fetching data/registry.rdf file...')
+    url = 'https://gitlab.com/crossref/open_funder_registry/-/raw/master/registry.rdf?inline=false'
+    response = requests.get(url)
+    rdf_file = Path('data/registry.rdf')
+    rdf_file.write_text(response.text, encoding='UTF-8')
+    print('updated registry.rdf file')
+
 def update_from_rdf():
     ns = {'skos': 'http://www.w3.org/2004/02/skos/core#',
           'rdf': 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
@@ -85,14 +94,6 @@ def update_from_rdf():
           'rdfs': 'http://www.w3.org/2000/01/rdf-schema#',
           'fref': 'http://data.crossref.org/fundingdata/terms',
           'schema': 'https://none.schema.org/'}
-
-
-    print('fetching data/registry.rdf file...')
-    url = 'https://gitlab.com/crossref/open_funder_registry/-/raw/master/registry.rdf?inline=false'
-    response = requests.get(url)
-    rdf_file = Path('data/registry.rdf')
-    rdf_file.write_text(response.text, encoding='UTF-8')
-    print('updated registry.rdf file')
     root = ET.parse('data/registry.rdf')
     funders = {}
 
@@ -123,7 +124,7 @@ def update_from_rdf():
             if label:
                 lname = label.find('skosxl:literalForm', ns).text
                 altnames.append(lname)
-        funder['alt-names'] = altnames
+        funder['altnames'] = altnames
         narrowlist = []
         for narrownode in concept.findall('skos:narrower', ns):
             narrowlist.append(narrownode.attrib['{http://www.w3.org/1999/02/22-rdf-syntax-ns#}resource'].split('/')[-1])
@@ -160,6 +161,9 @@ if __name__ == '__main__':
     arguments.add_argument('--fetch',
                            action='store_true',
                            help='Whether to fetch a fresh copy with the crossref API')
+    arguments.add_argument('--rebuild_json',
+                           action='store_true',
+                           help='Whether to rebuild the json file from RDF')
     arguments.add_argument('--dbpath',
                            default='xapian.db',
                            help='Path to writable database directory.')
@@ -171,6 +175,8 @@ if __name__ == '__main__':
         print('CANNOT OVERWRITE dbpath')
         sys.exit(2)
     if args.fetch:
+        fetch_rdf()
+    if args.rebuild_json:
         funders = update_from_rdf()
     else:
         funders = json.loads(funders_file.read_text(encoding='UTF-8'))
