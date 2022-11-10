@@ -20,7 +20,10 @@ def validate_config():
 
 app = Flask(__name__, static_folder='static/' , static_url_path='/static')
 #app.config.from_object(config.Config)
-app.config.from_object(config.ProductionConfig)
+if 'DEBUG' in app.config:
+    app.config.from_object(config.Config)
+else:
+    app.config.from_object(config.ProductionConfig)
 validate_config()
 
 @app.route('/')
