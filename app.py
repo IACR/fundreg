@@ -19,6 +19,7 @@ def validate_config():
         raise ValueError(str(app.config))
 
 app = Flask(__name__, static_folder='static/' , static_url_path='/static')
+#app.config.from_object(config.Config)
 app.config.from_object(config.ProductionConfig)
 validate_config()
 

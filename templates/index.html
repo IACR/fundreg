@@ -137,7 +137,7 @@
             <h5>More general</h5>
             <ul>
               {% for key,nam in item.broader.items() %}
-              <li><a href="/view/{{key}}">{{nam}}</a></li>
+              <li><a href="{{url_for('view_funder', id=key)}}">{{nam}}</a></li>
               {% endfor %}
             </ul>
             {% endif %}
@@ -145,7 +145,7 @@
             <h5>More narrow</h5>
             <ul>
               {% for key,nam in item.narrower.items() %}
-              <li><a href="/view/{{key}}">{{nam}}</a></li>
+              <li><a href="{{url_for('view_funder', id=key)}}">{{nam}}</a></li>
               {% endfor %}
             </ul>
             {% endif %}
@@ -251,7 +251,7 @@
      }
      controller = new AbortController();
      signal = controller.signal;
-     fetch('/funding/search?' + new URLSearchParams(args), {signal})
+     fetch("{{url_for('get_results')}}?" + new URLSearchParams(args), {signal})
        .then((response) => response.json())
        .then((data) => {
          console.log(data);
