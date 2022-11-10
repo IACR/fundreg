@@ -6,16 +6,21 @@ in a separate task to compile the output.
 """
 
 from flask import json, Flask, request, render_template, current_app
+import config
 import os
 import sys
 from search.search_lib import search
 
 # Make sure we aren't running on an old python.
-assert sys.version_info >= (3, 7)
+assert sys.version_info >= (3, 6)
 
-config = {'db_path': 'search/xapian.db'}
+def validate_config():
+    if 'DB_PATH' not in app.config:
+        raise ValueError(str(app.config))
 
-app = Flask(__name__, static_folder='static/', static_url_path='/')
+app = Flask(__name__, static_folder='static/' , static_url_path='/static')
+app.config.from_object(config.ProductionConfig)
+validate_config()
 
 @app.route('/')
 def home():
@@ -23,7 +28,7 @@ def home():
 
 @app.route('/view/<int:id>')
 def view_funder(id):
-    result = search(config.get('db_path'),
+    result = search(app.config['DB_PATH'],
                     offset=0,
                     textq='id:' + str(id),
                     locationq=None)
@@ -31,7 +36,6 @@ def view_funder(id):
         result = {'item': result.get('results')[0]}
     else:
         result = {'error': 'no such item'}
-    print(result)
     return render_template('index.html', **result)
 
 @app.route('/search', methods=['GET'])
@@ -39,7 +43,7 @@ def get_results():
     args = request.args.to_dict()
     if 'textq' not in args and 'locationq' not in args:
         return json.jsonify({'error': 'missing queries'})
-    return json.jsonify(search(config.get('db_path'),
+    return json.jsonify(search(app.config['DB_PATH'],
                                offset=args.get('offset', 0),
                                textq=args.get('textq'),
                                locationq=args.get('locationq')))

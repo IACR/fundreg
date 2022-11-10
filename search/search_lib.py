@@ -174,7 +174,7 @@ def search(db_path, offset=0, limit=100, textq=None, locationq=None):
 if __name__ == '__main__':
     arguments = argparse.ArgumentParser()
     arguments.add_argument('--dbpath',
-                           default='xapian.db',
+                           default='./xapian.db',
                            help='Path to writable database directory.')
     arguments.add_argument('--name',
                            help='basic query')
