@@ -30,16 +30,17 @@ validate_config()
 def home():
     return render_template('index.html')
 
-@app.route('/view/<int:id>')
+@app.route('/view/<id>')
 def view_funder(id):
     result = search(app.config['DB_PATH'],
                     offset=0,
-                    textq='id:' + str(id),
+                    textq='id:' + id,
                     locationq=None)
     if len(result.get('results')) > 0:
         result = {'item': result.get('results')[0]}
     else:
         result = {'error': 'no such item'}
+    print(result)
     return render_template('index.html', **result)
 
 @app.route('/search', methods=['GET'])

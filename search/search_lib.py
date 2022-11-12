@@ -14,20 +14,21 @@ import sys
 import xapian
 from flask import current_app as app
 
+# where we store the source for sorting.
+SLOT_NUMBER = 0
 # We give extra weight to terms in name
 NAME_WEIGHT = 10
 
-class SearchPrefix(Enum):
+class SearchPrefix(str, Enum):
     NAME = 'S'
     LOCATION = 'K'
     ORGTYPE = 'O'
     ID = 'Q'
 
 def index_funder(funder, writable_db=None, termgenerator=None):
-    """Index the funder dictionary. It returns no value. It is used by create_index.py.
+    """Index the funder. It returns no value. It is used by create_index.py.
        args:
-          funder: a dict defined by the swagger documentation at
-                  https://api.crossref.org/swagger-ui/index.html
+          funder: a Funder from model.py
           writable_db: a xapian database. If this is not provided, then
                   the database is opened and closed at the end. This is
                   only useful for indexing individual items that are updated.
@@ -51,35 +52,37 @@ def index_funder(funder, writable_db=None, termgenerator=None):
         termgenerator.set_flags(termgenerator.FLAG_SPELLING);
 
     doc = xapian.Document()
-    docid = funder.get('id')
+    docid = funder.global_id()
     doc.add_boolean_term(docid)
+    slot_value = '1' if funder.source.value == 'fundreg' else '0'
+    doc.add_value(SLOT_NUMBER, slot_value)
     termgenerator.set_document(doc)
 
-    name = funder.get('name')
+    name = funder.name
     termgenerator.index_text(name, 1, SearchPrefix.NAME.value)
     termgenerator.index_text(name, NAME_WEIGHT)
 
     termgenerator.increase_termpos()
-    altnames = funder.get('altnames')
-    for altname in altnames:
+    for altname in funder.altnames:
         termgenerator.index_text(altname, 1, SearchPrefix.NAME.value)
         termgenerator.index_text(altname, NAME_WEIGHT)
     
     termgenerator.increase_termpos()
-    location = funder.get('country')
+    location = funder.country
     termgenerator.index_text(location, 1, SearchPrefix.LOCATION.value)
     termgenerator.increase_termpos()
-    location = funder.get('region')
-    termgenerator.index_text(location, 1, SearchPrefix.LOCATION.value)
 
     termgenerator.increase_termpos()
-    orgtype = funder.get('fundingBodyType')
+    orgtype = funder.funder_type.value
     termgenerator.index_text(orgtype, 1, SearchPrefix.ORGTYPE.value)
 
     termgenerator.increase_termpos()
     termgenerator.index_text(docid, 1, SearchPrefix.ID.value)
 
-    doc.set_data(json.dumps(funder, indent=2))
+    data = funder.dict()
+    data['id'] = docid
+    data['source_id']
+    doc.set_data(json.dumps(data, indent=2))
     writable_db.replace_document(docid, doc)
     if auto_commit:
         writable_db.commit()
@@ -140,8 +143,9 @@ def search(db_path, offset=0, limit=100, textq=None, locationq=None):
         enquire = xapian.Enquire(db)
         enquire.set_query(query)
         res = {'parsed_query': str(query)}
-        # Use relevance score.
-        enquire.set_sort_by_relevance()
+        # Use source then relevance score.
+        enquire.set_sort_by_value_then_relevance(SLOT_NUMBER, True)
+        # enquire.set_sort_by_relevance()
         res['sort_order'] = 'sorted by relevance'
         matches = []
         # Retrieve the matched set of documents.
