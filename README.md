@@ -17,7 +17,7 @@ on mathematics and not the stems of the word.
 We regard the funders registry as primary, but we also augment it by
 the ROR registry to cover the case where a professor receives support
 for a temporary visit to conduct research. For this reason we have
-defined a common entity called `Funder` in `search/model.py` and
+defined a common entity called `Funder` in [`search/model.py`](blob/main/search/model.py) and
 we parse data from both sources into this format. If a ROR entity is
 found that matches a Funder Registry entity because it has an external
 preferred ID for `FundRef`, then we merge it into the existing Funder
