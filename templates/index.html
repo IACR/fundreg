@@ -124,10 +124,10 @@
           <div class="col-6">
             <h3>{{item.name}}</h3>
 <pre id="latex" class="mt-4 py-2">
-\addfunder{id={{item.source_id}},
-    name="{{item.name}}",
-    grantid="XXXXXX",
-    country="{{item.country}}"}
+{% if item.source == 'fundreg' %}\addfunding[crossref={% else %}\addfunding[ror={% endif %}{{item.source_id}},
+            grantid={XXXXXX},
+            country={{'{'+item.country+'}'}}]{{'{'+item.name+'}'}}
+
 </pre>
             <p>
               You need to supply the grantid. <button id="bibcopy" class="ms-3 btn btn-sm btn-secondary"
