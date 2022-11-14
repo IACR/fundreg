@@ -17,7 +17,7 @@ on mathematics and not the stems of the word.
 We regard the funders registry as primary, but we also augment it by
 the ROR registry to cover the case where a professor receives support
 for a temporary visit to conduct research. For this reason we have
-defined a common entity called `Funder` in [`search/model.py`](blob/main/search/model.py) and
+defined a common entity called `Funder` in `search/model.py`
 we parse data from both sources into this format. If a ROR entity is
 found that matches a Funder Registry entity because it has an external
 preferred ID for `FundRef`, then we merge it into the existing Funder
@@ -71,7 +71,7 @@ object to this parser and merge the ROR objects into the list.
 
 ## The data model
 
-The `Funder` object is defined in `search/model.py using the
+The `Funder` object is defined in `search/model.py` using the
 `pydantic` python package to facilitate easy validation, but it could
 have been built with any technology that supports serialization
 (validation is just a good practice). The JSON schema for the Funder
