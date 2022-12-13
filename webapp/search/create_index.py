@@ -58,7 +58,7 @@ def fetch_ror():
     print('fetching ROR data')
     response = requests.get('https://zenodo.org/api/records/?communities=ror-data&sort=mostrecent')
     version_data = response.json()
-    print(version_data)
+    print(json.dumps(version_data, indent=2))
     print("TODO: finish this")
 
 def extract_ror_id(uri):
