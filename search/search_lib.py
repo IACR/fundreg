@@ -88,7 +88,7 @@ def index_funder(funder, writable_db=None, termgenerator=None):
         writable_db.commit()
         writable_db.close()
 
-def search(db_path, offset=0, limit=100, textq=None, locationq=None):
+def search(db_path, offset=0, limit=1000, textq=None, locationq=None):
     """Execute a query on the index. At least one of textq or locationq
     must be non-None.
 
