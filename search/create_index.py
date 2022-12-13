@@ -140,6 +140,9 @@ if __name__ == '__main__':
     arguments.add_argument('--include_ror',
                            action='store_true',
                            help='Whether to omit ROR data')
+    arguments.add_argument('--defer_to_fundreg',
+                           action='store_true',
+                           help='Whether to replace ROR IDs by related fundreg ID')
     args = arguments.parse_args()
     funders = {}
     outdated = []
@@ -180,7 +183,7 @@ if __name__ == '__main__':
             ror_file.write_text(ror_funders.json(indent=2), encoding='UTF-8')
         # For now simply add them without merging.
         for key, value in ror_funders.funders.items():
-            if value.preferred_fundref:
+            if args.defer_to_fundreg and value.preferred_fundref:
                 preferred_fundreg = '{}_{}'.format(DataSource.FUNDREG.value, value.preferred_fundref)
                 preferred_fundreg = funderlist.funders.get(preferred_fundreg)
                 if not preferred_fundreg: # unlikely
