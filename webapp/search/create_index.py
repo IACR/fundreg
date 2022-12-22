@@ -19,6 +19,7 @@ import requests
 import sys
 import xapian
 from xml.etree import ElementTree as ET
+from zipfile import ZipFile
 
 from model import Funder, FunderList, RelationshipType, DataSource
 from rdf_parser import parse_rdf
@@ -57,9 +58,22 @@ def fetch_fundreg():
 def fetch_ror():
     print('fetching ROR data')
     response = requests.get('https://zenodo.org/api/records/?communities=ror-data&sort=mostrecent')
-    version_data = response.json()
+    version_data = response.json().get('hits').get('hits')[0]
     print(json.dumps(version_data, indent=2))
-    print("TODO: finish this")
+    publication_date = version_data.get('metadata').get('publication_date')
+    print('ROR data from {}'.format(publication_date))
+    latest_url = version_data.get('files')[0].get('links').get('self')
+    print('fetching {}'.format(latest_url))
+    # latest_url should be a zip file.
+    with requests.get(latest_url, stream=True) as stream:
+        stream.raise_for_status()
+        with open('data/latest.ror.zip', 'wb') as f:
+            for chunk in stream.iter_content(chunk_size=8192):
+                f.write(chunk)
+    with ZipFile('data/latest.ror.zip', 'r') as zipObj:
+        filename = zipObj.infolist()[0].filename
+        zipObj.extractall()
+        os.rename(filename, 'data/raw_ror.json')
 
 def extract_ror_id(uri):
     """Extract 0abcdefg12 from https://ror.org/0abcdefg12"""

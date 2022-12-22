@@ -24,6 +24,7 @@ class SearchPrefix(str, Enum):
     LOCATION = 'K'
     ORGTYPE = 'O'
     ID = 'Q'
+    SOURCE = 'XS'
 
 def index_funder(funder, writable_db=None, termgenerator=None):
     """Index the funder. It returns no value. It is used by create_index.py.
@@ -34,17 +35,6 @@ def index_funder(funder, writable_db=None, termgenerator=None):
                   only useful for indexing individual items that are updated.
           termgenerator: a xapian TermGenerator
     """
-    if not writable_db:
-        try:
-            # In this case, we open the database and commit at the end.
-            writable_db = xapian.WritableDatabase(app.config['SEARCH_DB'], xapian.DB_CREATE_OR_OPEN)
-            auto_commit = True
-        except Exception as e:
-            # If the database can't be opened, there is a problem.
-            app.logger.critical('Unable to index document: {}'.format(str(e)))
-            return
-    else:
-        auto_commit = False
     if not termgenerator:
         termgenerator = xapian.TermGenerator()
         termgenerator.set_database(writable_db)
@@ -54,6 +44,8 @@ def index_funder(funder, writable_db=None, termgenerator=None):
     doc = xapian.Document()
     docid = funder.global_id()
     doc.add_boolean_term(docid)
+    doc.add_boolean_term(SearchPrefix.SOURCE.value + funder.source.value)
+    # We sort on SLOT_NUMBER
     slot_value = '1' if funder.source.value == 'fundreg' else '0'
     doc.add_value(SLOT_NUMBER, slot_value)
     termgenerator.set_document(doc)
@@ -84,11 +76,8 @@ def index_funder(funder, writable_db=None, termgenerator=None):
     data['source_id']
     doc.set_data(json.dumps(data, indent=2))
     writable_db.replace_document(docid, doc)
-    if auto_commit:
-        writable_db.commit()
-        writable_db.close()
 
-def search(db_path, offset=0, limit=1000, textq=None, locationq=None):
+def search(db_path, offset=0, limit=1000, textq=None, locationq=None, source=None):
     """Execute a query on the index. At least one of textq or locationq
     must be non-None.
 
@@ -139,6 +128,9 @@ def search(db_path, offset=0, limit=1000, textq=None, locationq=None):
             location_query = queryparser.parse_query(locationq, flags, SearchPrefix.LOCATION.value)
             query_list.append(location_query)
         query = xapian.Query(xapian.Query.OP_AND, query_list)
+        if source: # filter on this source value.
+            source_query = xapian.Query(SearchPrefix.SOURCE.value + source)
+            query = xapian.Query(xapian.Query.OP_FILTER, query, source_query)
         # Use an Enquire object on the database to run the query
         enquire = xapian.Enquire(db)
         enquire.set_query(query)
@@ -184,9 +176,11 @@ if __name__ == '__main__':
                            help='basic query')
     arguments.add_argument('--location',
                            help='query restricted to location')
+    arguments.add_argument('--source',
+                           help='ror or fundreg or None')
     args = arguments.parse_args()
     if not args.name and not args.location:
         print('one of --name or --location is required')
         sys.exit(2)
-    results = search(args.dbpath, 0, 100, args.name, args.location)
+    results = search(args.dbpath, 0, 100, args.name, args.location, args.source)
     print(json.dumps(results, indent=2))
