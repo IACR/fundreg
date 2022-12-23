@@ -205,5 +205,7 @@ if __name__ == '__main__':
             else:
                 funderlist.funders[key] = value
 
+    if args.verbose:
+        print('creating index')
     create_index(args.dbpath, funderlist, args.verbose)
 

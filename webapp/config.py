@@ -1,7 +1,8 @@
 class Config(object):
     DEBUG = True
     DEVELOPMENT = True
-    DB_PATH='search/xapian.db' # may need to be absolute path.
+    SCRIPT_NAME = '/funding'
+    DB_PATH='/home/mccurley/git/fundreg/search/xapian.db'
 
 class ProductionConfig(Config):
     DEBUG = False
